@@ -6,12 +6,13 @@
 
 在仓库 `Settings -> Secrets and variables -> Actions` 里添加：
 
-- `OPENAI_API_KEY`：OpenAI API key
+- `DEEPSEEK_API_KEY`：DeepSeek API key
 - `SERVERCHAN_SENDKEY`：Server 酱 Turbo SendKey，通常以 `SCT` 开头
 
 可选变量：
 
-- `OPENAI_MODEL`：默认 `gpt-4.1-mini`
+- `DEEPSEEK_MODEL`：默认 `deepseek-v4-flash`
+- `DEEPSEEK_BASE_URL`：默认 `https://api.deepseek.com`
 
 ## 手动测试
 
@@ -28,5 +29,5 @@
 - arXiv 候选最多 12 篇
 - 最终论文最多 3 篇
 - 最终资讯最多 3 条
-- OpenAI 输出上限 1800 tokens
+- DeepSeek 输出上限 1800 tokens
 - 不做 citation chaining、相关工作扩展或代码复现深挖

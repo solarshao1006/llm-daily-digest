@@ -157,25 +157,33 @@ def build_prompt(papers: list[dict], news: list[dict], today: dt.date) -> str:
     ).strip()
 
 
-def call_openai(prompt: str) -> str:
-    api_key = os.getenv("OPENAI_API_KEY")
+def call_deepseek(prompt: str) -> str:
+    api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY")
+        raise RuntimeError("Missing DEEPSEEK_API_KEY")
 
-    model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-    max_tokens = env_int("MAX_OUTPUT_TOKENS", 1800)
+    model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+    base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
+    max_tokens = env_int("MAX_COMPLETION_TOKENS", 1800)
     response = None
     for attempt in range(4):
         response = requests.post(
-            "https://api.openai.com/v1/responses",
+            f"{base_url}/chat/completions",
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
                 "model": model,
-                "input": prompt,
-                "max_output_tokens": max_tokens,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "你是一个严谨、低 token 预算的 LLM 研究日报编辑。",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": max_tokens,
+                "temperature": 0.2,
             },
             timeout=120,
         )
@@ -186,7 +194,7 @@ def call_openai(prompt: str) -> str:
         retry_after = response.headers.get("retry-after")
         delay = int(retry_after) if retry_after and retry_after.isdigit() else 2**attempt * 10
         print(
-            f"OpenAI API returned {response.status_code}; retrying in {delay}s",
+            f"DeepSeek API returned {response.status_code}; retrying in {delay}s",
             file=sys.stderr,
         )
         time.sleep(delay)
@@ -195,19 +203,14 @@ def call_openai(prompt: str) -> str:
         response.raise_for_status()
     except requests.HTTPError as exc:
         error_body = response.text[:1200] if response is not None else ""
-        raise RuntimeError(f"OpenAI API request failed: {exc}; body={error_body}") from exc
+        raise RuntimeError(f"DeepSeek API request failed: {exc}; body={error_body}") from exc
     payload = response.json()
-    if payload.get("output_text"):
-        return payload["output_text"].strip()
-
-    chunks: list[str] = []
-    for item in payload.get("output", []):
-        for content in item.get("content", []):
-            if content.get("type") in {"output_text", "text"}:
-                chunks.append(content.get("text", ""))
-    text = "\n".join(chunk for chunk in chunks if chunk).strip()
+    choices = payload.get("choices", [])
+    text = ""
+    if choices:
+        text = choices[0].get("message", {}).get("content", "").strip()
     if not text:
-        raise RuntimeError(f"OpenAI response had no text: {payload}")
+        raise RuntimeError(f"DeepSeek response had no text: {payload}")
     return text
 
 
@@ -234,7 +237,7 @@ def main() -> int:
     papers = fetch_arxiv(arxiv_max)
     news = fetch_news(news_limit)
     prompt = build_prompt(papers, news, today)
-    digest = call_openai(prompt)
+    digest = call_deepseek(prompt)
 
     print(digest)
     push_serverchan(f"LLM 日报 {today.isoformat()}", digest)
