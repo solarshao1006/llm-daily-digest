@@ -14,6 +14,18 @@
 - `DEEPSEEK_MODEL`：默认 `deepseek-v4-flash`
 - `DEEPSEEK_BASE_URL`：默认 `https://api.deepseek.com`
 
+## Paper Insight Skill
+
+workflow 会在运行时 clone：
+
+`https://github.com/Stars-Shen/Paper-insight-skill.git`
+
+并读取：
+
+`paper-insight/SKILL.md`
+
+脚本默认最多注入前 6000 字符，避免 prompt 过长。可通过 repository variable `PAPER_INSIGHT_SKILL_CHARS` 调整。
+
 ## 手动测试
 
 进入 GitHub 仓库页面：

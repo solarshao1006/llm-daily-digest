@@ -169,12 +169,29 @@ def enrich_papers_with_pdf_excerpt(papers: list[dict]) -> list[dict]:
     return papers
 
 
+def load_paper_insight_skill() -> str:
+    skill_path = os.getenv("PAPER_INSIGHT_SKILL_PATH", "")
+    if not skill_path:
+        return ""
+    max_chars = env_int("PAPER_INSIGHT_SKILL_CHARS", 6000)
+    try:
+        with open(skill_path, "r", encoding="utf-8") as handle:
+            return handle.read()[:max_chars]
+    except OSError as exc:
+        print(f"Could not read paper-insight skill: {exc}", file=sys.stderr)
+        return ""
+
+
 def build_prompt(papers: list[dict], news: list[dict], today: dt.date) -> str:
     paper_limit = env_int("PAPER_LIMIT", 3)
     news_limit = env_int("NEWS_LIMIT", 3)
+    paper_insight_skill = load_paper_insight_skill()
     return textwrap.dedent(
         f"""
         你是一个低 token 预算但重视理解质量的 LLM 研究日报编辑。请基于下面的候选材料，输出中文日报。
+
+        paper-insight skill 摘录（优先遵循，但受本任务 token 预算约束）：
+        {paper_insight_skill or "未读取到外部 paper-insight skill；使用内置轻量精读规则。"}
 
         日期：{today.isoformat()}
 

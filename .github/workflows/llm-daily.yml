@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Check out paper-insight skill
+        run: git clone --depth 1 https://github.com/Stars-Shen/Paper-insight-skill.git _external/Paper-insight-skill
+
       - name: Generate and push digest
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -36,6 +39,8 @@ jobs:
           ARXIV_MAX_PDFS: "3"
           PDF_MAX_PAGES: "8"
           PDF_EXCERPT_CHARS: "9000"
+          PAPER_INSIGHT_SKILL_PATH: "_external/Paper-insight-skill/paper-insight/SKILL.md"
+          PAPER_INSIGHT_SKILL_CHARS: ${{ vars.PAPER_INSIGHT_SKILL_CHARS || '6000' }}
           PAPER_LIMIT: "3"
           NEWS_LIMIT: "3"
         run: python scripts/llm_daily_digest.py
