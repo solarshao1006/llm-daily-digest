@@ -24,6 +24,11 @@
 - `DEEPSEEK_MODEL`：默认 `deepseek-v4-flash`
 - `DEEPSEEK_BASE_URL`：默认 `https://api.deepseek.com`
 - `PAPER_INSIGHT_SKILL_CHARS`：默认 `6000`
+- `AI_LLM_ENABLED`：设为 `false` 可关闭 AI/LLM 推送
+- `CHINA_CYBER_ENABLED`：设为 `false` 可关闭中国网络安全策略推送
+- `REPRO_AI_PGT_ENABLED`：设为 `false` 可关闭辅助生殖 AI/PGT 推送
+
+未设置这些开关变量时，三个主题默认全部开启。
 
 ## Paper Insight Skill
 

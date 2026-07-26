@@ -483,6 +483,9 @@ def main() -> int:
 
     title = f"{topic['title_prefix']} {today.isoformat()}"
     print(digest)
+    if os.getenv("DRY_RUN") == "1":
+        print(f"\nDRY_RUN=1: skipped ServerChan push ({topic_key})")
+        return 0
     push_serverchan(title, digest)
     print(f"\nServerChan push: SUCCESS ({topic_key})")
     return 0
