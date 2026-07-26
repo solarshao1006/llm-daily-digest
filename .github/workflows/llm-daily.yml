@@ -40,7 +40,7 @@ jobs:
         if: matrix.topic == 'ai_llm' && vars.AI_LLM_ENABLED != 'false'
         env:
           DIGEST_TOPIC: ai_llm
-          DEEPSEEK_API_KEY: ${{ secrets.AI_LLM_DEEPSEEK_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.AI_LLM_DEEPSEEK_API_KEY || secrets.DEEPSEEK_API_KEY }}
           SERVERCHAN_SENDKEY: ${{ secrets.AI_LLM_SERVERCHAN_SENDKEY }}
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
           DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
@@ -59,7 +59,7 @@ jobs:
         if: matrix.topic == 'china_cyber_strategy' && vars.CHINA_CYBER_ENABLED != 'false'
         env:
           DIGEST_TOPIC: china_cyber_strategy
-          DEEPSEEK_API_KEY: ${{ secrets.CHINA_CYBER_DEEPSEEK_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.CHINA_CYBER_DEEPSEEK_API_KEY || secrets.AI_LLM_DEEPSEEK_API_KEY || secrets.DEEPSEEK_API_KEY }}
           SERVERCHAN_SENDKEY: ${{ secrets.CHINA_CYBER_SERVERCHAN_SENDKEY }}
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
           DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
@@ -75,7 +75,7 @@ jobs:
         if: matrix.topic == 'repro_ai_pgt' && vars.REPRO_AI_PGT_ENABLED != 'false'
         env:
           DIGEST_TOPIC: repro_ai_pgt
-          DEEPSEEK_API_KEY: ${{ secrets.REPRO_DEEPSEEK_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.REPRO_DEEPSEEK_API_KEY || secrets.AI_LLM_DEEPSEEK_API_KEY || secrets.DEEPSEEK_API_KEY }}
           SERVERCHAN_SENDKEY: ${{ secrets.REPRO_SERVERCHAN_SENDKEY }}
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
           DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}

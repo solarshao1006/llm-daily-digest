@@ -8,16 +8,19 @@
 
 ## GitHub Secrets
 
-在仓库 `Settings -> Secrets and variables -> Actions` 里添加 6 个 repository secrets：
+在仓库 `Settings -> Secrets and variables -> Actions` 里添加 repository secrets。
 
-- `AI_LLM_DEEPSEEK_API_KEY`
 - `AI_LLM_SERVERCHAN_SENDKEY`
-- `CHINA_CYBER_DEEPSEEK_API_KEY`
 - `CHINA_CYBER_SERVERCHAN_SENDKEY`
-- `REPRO_DEEPSEEK_API_KEY`
 - `REPRO_SERVERCHAN_SENDKEY`
+- `AI_LLM_DEEPSEEK_API_KEY` 或 `DEEPSEEK_API_KEY`
 
 每个 `SERVERCHAN_SENDKEY` 通常以 `SCT` 开头。
+
+默认三个主题共用 `AI_LLM_DEEPSEEK_API_KEY`；如果没有配置它，则回退到旧变量 `DEEPSEEK_API_KEY`。如需单独计费或隔离限额，可额外配置：
+
+- `CHINA_CYBER_DEEPSEEK_API_KEY`
+- `REPRO_DEEPSEEK_API_KEY`
 
 可选 repository variables：
 
