@@ -9,6 +9,7 @@ import json
 import os
 import sys
 import textwrap
+import time
 import urllib.parse
 import xml.etree.ElementTree as ET
 
@@ -148,10 +149,10 @@ def build_prompt(papers: list[dict], news: list[dict], today: dt.date) -> str:
         - 输出结构固定为：今日总览、重点论文、重点资讯、优先阅读建议、来源链接。
 
         候选论文 JSON：
-        {json.dumps(papers, ensure_ascii=False, indent=2)}
+        {json.dumps(papers, ensure_ascii=False, separators=(",", ":"))}
 
         候选资讯 JSON：
-        {json.dumps(news, ensure_ascii=False, indent=2)}
+        {json.dumps(news, ensure_ascii=False, separators=(",", ":"))}
         """
     ).strip()
 
@@ -163,20 +164,38 @@ def call_openai(prompt: str) -> str:
 
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
     max_tokens = env_int("MAX_OUTPUT_TOKENS", 1800)
-    response = requests.post(
-        "https://api.openai.com/v1/responses",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "input": prompt,
-            "max_output_tokens": max_tokens,
-        },
-        timeout=120,
-    )
-    response.raise_for_status()
+    response = None
+    for attempt in range(4):
+        response = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "input": prompt,
+                "max_output_tokens": max_tokens,
+            },
+            timeout=120,
+        )
+        if response.status_code not in {429, 500, 502, 503, 504}:
+            break
+        if attempt == 3:
+            break
+        retry_after = response.headers.get("retry-after")
+        delay = int(retry_after) if retry_after and retry_after.isdigit() else 2**attempt * 10
+        print(
+            f"OpenAI API returned {response.status_code}; retrying in {delay}s",
+            file=sys.stderr,
+        )
+        time.sleep(delay)
+
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        error_body = response.text[:1200] if response is not None else ""
+        raise RuntimeError(f"OpenAI API request failed: {exc}; body={error_body}") from exc
     payload = response.json()
     if payload.get("output_text"):
         return payload["output_text"].strip()
