@@ -14,6 +14,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 
 import feedparser
+from pypdf import PdfReader
 import requests
 
 
@@ -130,6 +131,44 @@ def fetch_news(limit: int) -> list[dict]:
     return items[: max(limit * 3, limit)]
 
 
+def arxiv_pdf_url(abs_url: str) -> str:
+    return abs_url.replace("/abs/", "/pdf/")
+
+
+def enrich_papers_with_pdf_excerpt(papers: list[dict]) -> list[dict]:
+    """Attach bounded PDF excerpts for a few top candidates."""
+    max_pdfs = env_int("ARXIV_MAX_PDFS", 3)
+    max_pages = env_int("PDF_MAX_PAGES", 8)
+    max_chars = env_int("PDF_EXCERPT_CHARS", 9000)
+
+    for paper in papers[:max_pdfs]:
+        link = paper.get("link", "")
+        if not link:
+            continue
+        try:
+            pdf_response = requests.get(arxiv_pdf_url(link), timeout=45)
+            pdf_response.raise_for_status()
+            pdf_path = f"/tmp/{paper.get('arxiv_id', 'paper').replace('/', '_')}.pdf"
+            with open(pdf_path, "wb") as handle:
+                handle.write(pdf_response.content)
+
+            reader = PdfReader(pdf_path)
+            page_texts = []
+            for page in reader.pages[:max_pages]:
+                page_texts.append(page.extract_text() or "")
+            excerpt = "\n".join(page_texts)
+            excerpt = " ".join(excerpt.split())[:max_chars]
+            if excerpt:
+                paper["pdf_excerpt"] = excerpt
+                paper["pdf_excerpt_note"] = (
+                    f"Extracted from first {min(max_pages, len(reader.pages))} PDF pages; "
+                    "use for lightweight paper-insight reading."
+                )
+        except Exception as exc:
+            paper["pdf_excerpt_error"] = str(exc)[:240]
+    return papers
+
+
 def build_prompt(papers: list[dict], news: list[dict], today: dt.date) -> str:
     paper_limit = env_int("PAPER_LIMIT", 3)
     news_limit = env_int("NEWS_LIMIT", 3)
@@ -144,8 +183,10 @@ def build_prompt(papers: list[dict], news: list[dict], today: dt.date) -> str:
         - 全文 1800-2600 中文字以内。
         - 先从入选论文中选 1 篇“今日重点精读”，用 600-900 中文字展开讲清楚原理。
         - 其他论文每篇 100-160 中文字，每条资讯 80-120 中文字。
-        - 使用 paper-insight 的轻量标准：核心问题、一句话贡献、方法与证据、局限或注意点、阅读优先级。
+        - 使用 paper-insight 的轻量精读标准，并区分：论文声称、证据支持的结论、你的推断。
         - 重点精读必须包含：为什么选它、问题背景、核心机制/原理、方法流程、实验或证据、局限、对研究/工程的启发。
+        - 如果某篇论文只有 abstract，没有 pdf_excerpt，必须标注“abstract-only”，不要假装读过全文。
+        - 如果有 pdf_excerpt，请优先基于 abstract + pdf_excerpt 做分层阅读：title/abstract/introduction/method/experiments/limitations；只做轻量精读，不展开长综述。
         - 可以自然保留必要英文术语，不要为了中文化而硬翻；例如 LLM, agent, benchmark, inference, alignment, RAG, post-training, decode, KV cache, tool use, evaluation 等术语可以直接保留或中英混排。
         - 原始英文论文标题必须保留，可在后面加简短中文解释；不要把英文标题完全翻译成中文标题。
         - 不做 citation chaining，不扩展相关工作，不编造 DOI/venue/数据集/结果/发布日期。
@@ -239,6 +280,7 @@ def main() -> int:
     news_limit = env_int("NEWS_LIMIT", 3)
 
     papers = fetch_arxiv(arxiv_max)
+    papers = enrich_papers_with_pdf_excerpt(papers)
     news = fetch_news(news_limit)
     prompt = build_prompt(papers, news, today)
     digest = call_deepseek(prompt)
