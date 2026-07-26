@@ -72,5 +72,5 @@ AI/LLM 和辅助生殖/PGT 主题会优先使用该 skill 的轻量论文精读�
 ## 内容边界
 
 - 中国网络安全日报以中国官方政策、标准、监管、产业报告为主，不以国外来源或漏洞新闻为主线。
-- 辅助生殖 AI/PGT 日报只做文献和研究进展解读，不提供诊疗建议。
+- 辅助生殖 AI/PGT 日报只做文献和研究进展解读，不提供诊疗建议；医学论文来源包含 PubMed/PMC、Human Reproduction、RBMO、Fertility and Sterility、ESHRE，并额外关注 New England Journal of Medicine、The Lancet、BMJ、JAMA、Cell、Nature、Science。
 - 所有主题都要求保留来源链接；无法确认的信息必须标注待核验。

@@ -136,11 +136,24 @@ TOPICS = {
             'OR "preimplantation genetic testing"[Title/Abstract] OR PGT[Title/Abstract] '
             'OR PGT-A[Title/Abstract] OR PGT-M[Title/Abstract] OR PGT-SR[Title/Abstract])'
         ),
+        "pubmed_journals": [
+            "The New England Journal of Medicine",
+            "Lancet",
+            "BMJ",
+            "JAMA",
+            "Cell",
+            "Nature",
+            "Science",
+        ],
         "feeds": [
             "https://academic.oup.com/rss/site_5306/3372.xml",
             "https://www.rbmojournal.com/current.rss",
             "https://www.fertstert.org/current.rss",
             "https://www.eshre.eu/Press-Room/RSS",
+            "https://www.bmj.com/rss/recent.xml",
+            "https://jamanetwork.com/rss/site_2/0.xml",
+            "https://www.nature.com/nm.rss",
+            "https://www.nature.com/nature.rss",
         ],
         "prompt": """
         你是辅助生殖 AI 与胚胎植入前遗传学检测（PGT）进展日报编辑。请基于候选材料输出中文日报。
@@ -151,6 +164,7 @@ TOPICS = {
         - 从候选中选 1 篇最值得精读的论文，用 700-1000 中文字展开。
         - 精读必须包含：研究问题、研究设计、样本/数据来源、AI 模型或 PGT 技术、主要终点、核心结果、局限、临床适用边界、伦理/监管注意事项。
         - 区分 AI embryo selection、time-lapse embryo assessment、live birth prediction、PGT-A、PGT-M、PGT-SR、non-invasive PGT。
+        - 医学论文来源要特别留意 New England Journal of Medicine, The Lancet, BMJ, JAMA, Cell, Nature, Science；如果候选来自这些期刊，请优先考虑其证据质量和临床影响。
         - 标注证据强度：RCT/前瞻性队列/回顾性研究/技术验证/综述/abstract-only。
         - 不提供诊疗建议，不暗示可替代医生判断。
         - 不编造样本量、终点、统计显著性、指南建议；无法确认时标注“摘要未说明”或“待核验”。
@@ -307,6 +321,29 @@ def fetch_pubmed(query: str, limit: int) -> list[dict]:
     return papers
 
 
+def dedupe_items(items: list[dict]) -> list[dict]:
+    seen = set()
+    deduped = []
+    for item in items:
+        key = item.get("pmid") or item.get("link") or item.get("title")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
+
+
+def fetch_pubmed_with_journals(query: str, journals: list[str], limit: int) -> list[dict]:
+    primary = fetch_pubmed(query, limit)
+    if not journals:
+        return primary
+
+    journal_query = " OR ".join(f'"{journal}"[Journal]' for journal in journals)
+    expanded_query = f"({query}) AND ({journal_query})"
+    journal_hits = fetch_pubmed(expanded_query, limit)
+    return dedupe_items(journal_hits + primary)[:limit]
+
+
 def arxiv_pdf_url(abs_url: str) -> str:
     return abs_url.replace("/abs/", "/pdf/")
 
@@ -368,7 +405,11 @@ def collect_sources(topic_key: str, topic: dict) -> tuple[list[dict], list[dict]
         manual_sources = topic.get("manual_sources", [])
         return [], manual_sources + fetch_feeds(topic["feeds"], news_limit)
     if mode == "pubmed":
-        papers = fetch_pubmed(topic["pubmed_query"], candidate_limit)
+        papers = fetch_pubmed_with_journals(
+            topic["pubmed_query"],
+            topic.get("pubmed_journals", []),
+            candidate_limit,
+        )
         return papers, fetch_feeds(topic.get("feeds", []), news_limit)
     raise ValueError(f"Unsupported source mode for {topic_key}: {mode}")
 
