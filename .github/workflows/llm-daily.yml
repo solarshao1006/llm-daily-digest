@@ -1,4 +1,4 @@
-name: LLM Daily Digest
+name: Multi-Topic Daily Digests
 
 on:
   schedule:
@@ -8,10 +8,18 @@ on:
 
 jobs:
   digest:
+    name: ${{ matrix.topic }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        topic:
+          - ai_llm
+          - china_cyber_strategy
+          - repro_ai_pgt
 
     steps:
       - name: Check out repository
@@ -28,14 +36,16 @@ jobs:
       - name: Check out paper-insight skill
         run: git clone --depth 1 https://github.com/Stars-Shen/Paper-insight-skill.git _external/Paper-insight-skill
 
-      - name: Generate and push digest
+      - name: Generate and push AI/LLM digest
+        if: matrix.topic == 'ai_llm'
         env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+          DIGEST_TOPIC: ai_llm
+          DEEPSEEK_API_KEY: ${{ secrets.AI_LLM_DEEPSEEK_API_KEY }}
+          SERVERCHAN_SENDKEY: ${{ secrets.AI_LLM_SERVERCHAN_SENDKEY }}
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
           DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
           MAX_COMPLETION_TOKENS: "2600"
-          ARXIV_MAX_CANDIDATES: "12"
+          CANDIDATE_LIMIT: "12"
           ARXIV_MAX_PDFS: "3"
           PDF_MAX_PAGES: "8"
           PDF_EXCERPT_CHARS: "9000"
@@ -43,4 +53,36 @@ jobs:
           PAPER_INSIGHT_SKILL_CHARS: ${{ vars.PAPER_INSIGHT_SKILL_CHARS || '6000' }}
           PAPER_LIMIT: "3"
           NEWS_LIMIT: "3"
+        run: python scripts/llm_daily_digest.py
+
+      - name: Generate and push China cybersecurity strategy digest
+        if: matrix.topic == 'china_cyber_strategy'
+        env:
+          DIGEST_TOPIC: china_cyber_strategy
+          DEEPSEEK_API_KEY: ${{ secrets.CHINA_CYBER_DEEPSEEK_API_KEY }}
+          SERVERCHAN_SENDKEY: ${{ secrets.CHINA_CYBER_SERVERCHAN_SENDKEY }}
+          DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
+          DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
+          MAX_COMPLETION_TOKENS: "2600"
+          CANDIDATE_LIMIT: "12"
+          PAPER_INSIGHT_SKILL_PATH: "_external/Paper-insight-skill/paper-insight/SKILL.md"
+          PAPER_INSIGHT_SKILL_CHARS: ${{ vars.PAPER_INSIGHT_SKILL_CHARS || '6000' }}
+          PAPER_LIMIT: "3"
+          NEWS_LIMIT: "9"
+        run: python scripts/llm_daily_digest.py
+
+      - name: Generate and push reproductive AI/PGT digest
+        if: matrix.topic == 'repro_ai_pgt'
+        env:
+          DIGEST_TOPIC: repro_ai_pgt
+          DEEPSEEK_API_KEY: ${{ secrets.REPRO_DEEPSEEK_API_KEY }}
+          SERVERCHAN_SENDKEY: ${{ secrets.REPRO_SERVERCHAN_SENDKEY }}
+          DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
+          DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
+          MAX_COMPLETION_TOKENS: "2600"
+          CANDIDATE_LIMIT: "12"
+          PAPER_INSIGHT_SKILL_PATH: "_external/Paper-insight-skill/paper-insight/SKILL.md"
+          PAPER_INSIGHT_SKILL_CHARS: ${{ vars.PAPER_INSIGHT_SKILL_CHARS || '6000' }}
+          PAPER_LIMIT: "3"
+          NEWS_LIMIT: "6"
         run: python scripts/llm_daily_digest.py

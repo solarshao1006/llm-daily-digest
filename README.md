@@ -1,22 +1,33 @@
-# LLM Daily Digest
+# Multi-Topic Daily Digests
 
-每天北京时间 08:00 由 GitHub Actions 生成低 token 预算的 LLM/AI 日报，并通过 Server 酱推送到微信。
+每天北京时间 08:00 由 GitHub Actions 分别生成三份日报，并通过 Server 酱推送到三个不同微信：
+
+- AI/LLM 论文与资讯
+- 中国网络安全、数据安全、信息智能化安全策略
+- 辅助生殖 AI 与胚胎植入前遗传学检测（PGT）
 
 ## GitHub Secrets
 
-在仓库 `Settings -> Secrets and variables -> Actions` 里添加：
+在仓库 `Settings -> Secrets and variables -> Actions` 里添加 6 个 repository secrets：
 
-- `DEEPSEEK_API_KEY`：DeepSeek API key
-- `SERVERCHAN_SENDKEY`：Server 酱 Turbo SendKey，通常以 `SCT` 开头
+- `AI_LLM_DEEPSEEK_API_KEY`
+- `AI_LLM_SERVERCHAN_SENDKEY`
+- `CHINA_CYBER_DEEPSEEK_API_KEY`
+- `CHINA_CYBER_SERVERCHAN_SENDKEY`
+- `REPRO_DEEPSEEK_API_KEY`
+- `REPRO_SERVERCHAN_SENDKEY`
 
-可选变量：
+每个 `SERVERCHAN_SENDKEY` 通常以 `SCT` 开头。
+
+可选 repository variables：
 
 - `DEEPSEEK_MODEL`：默认 `deepseek-v4-flash`
 - `DEEPSEEK_BASE_URL`：默认 `https://api.deepseek.com`
+- `PAPER_INSIGHT_SKILL_CHARS`：默认 `6000`
 
 ## Paper Insight Skill
 
-workflow 会在运行时 clone：
+workflow 运行时会 clone：
 
 `https://github.com/Stars-Shen/Paper-insight-skill.git`
 
@@ -24,24 +35,34 @@ workflow 会在运行时 clone：
 
 `paper-insight/SKILL.md`
 
-脚本默认最多注入前 6000 字符，避免 prompt 过长。可通过 repository variable `PAPER_INSIGHT_SKILL_CHARS` 调整。
+AI/LLM 和辅助生殖/PGT 主题会优先使用该 skill 的轻量论文精读规则。中国网络安全主题使用 repo 内置的政策、标准、监管、产业安全策略分析框架。
 
 ## 手动测试
 
 进入 GitHub 仓库页面：
 
-`Actions -> LLM Daily Digest -> Run workflow`
+`Actions -> Multi-Topic Daily Digests -> Run workflow`
 
-成功后，微信会收到标题类似 `LLM 日报 2026-07-26` 的消息。
+一次手动运行会启动 3 个 matrix job：
+
+- `ai_llm`
+- `china_cyber_strategy`
+- `repro_ai_pgt`
+
+成功后，三个微信分别收到对应主题日报。
 
 ## 成本控制
 
 默认限制：
 
-- arXiv 候选最多 12 篇
-- PDF 最多读取前 3 篇候选，每篇最多前 8 页、9000 字符
-- 最终论文最多 3 篇
-- 每天重点展开 1 篇论文，讲清核心原理和方法流程
-- 最终资讯最多 3 条
+- 每个主题候选最多 12 条
+- AI/LLM 主题最多读取前 3 篇 arXiv PDF，每篇最多前 8 页、9000 字符
+- 每个主题最终重点展开 1 条内容
 - DeepSeek 输出上限 2600 tokens
-- 不做 citation chaining、相关工作扩展或代码复现深挖
+- 不做 citation chaining、长综述或代码复现深挖
+
+## 内容边界
+
+- 中国网络安全日报以中国官方政策、标准、监管、产业报告为主，不以国外来源或漏洞新闻为主线。
+- 辅助生殖 AI/PGT 日报只做文献和研究进展解读，不提供诊疗建议。
+- 所有主题都要求保留来源链接；无法确认的信息必须标注待核验。
