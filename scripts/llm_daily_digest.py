@@ -433,6 +433,7 @@ def build_prompt(topic_key: str, topic: dict, papers: list[dict], items: list[di
         通用要求：
         - 今日候选不够强时可以少写，不要凑数。
         - 所有重要判断都附来源链接或标注待核验。
+        - 正文中仍要尽量在相关段落内写出关键来源链接；脚本会在末尾自动追加来源清单作为兜底。
         - 不要输出 API key、SendKey 或 GitHub secret 名称的值。
 
         候选论文/医学文献 JSON：
@@ -442,6 +443,38 @@ def build_prompt(topic_key: str, topic: dict, papers: list[dict], items: list[di
         {json.dumps(items, ensure_ascii=False, separators=(",", ":"))}
         """
     ).strip()
+
+
+def append_source_links(digest: str, papers: list[dict], items: list[dict]) -> str:
+    limit = env_int("SOURCE_LINK_LIMIT", 16)
+    sources = []
+    for item in papers + items:
+        link = item.get("link", "")
+        if not link:
+            continue
+        label = item.get("title") or item.get("source") or link
+        source = item.get("source", "")
+        display = f"{source}: {label}" if source and source not in label else label
+        sources.append({"display": " ".join(display.split())[:140], "link": link})
+
+    deduped = []
+    seen = set()
+    for source in sources:
+        if source["link"] in seen:
+            continue
+        seen.add(source["link"])
+        deduped.append(source)
+        if len(deduped) >= limit:
+            break
+
+    if not deduped:
+        return digest
+
+    link_lines = "\n".join(
+        f"- {idx}. {source['display']}: {source['link']}"
+        for idx, source in enumerate(deduped, start=1)
+    )
+    return f"{digest.rstrip()}\n\n---\n自动来源清单（脚本追加，防漏链）\n{link_lines}"
 
 
 def call_deepseek(prompt: str, system_prompt: str) -> str:
@@ -521,6 +554,7 @@ def main() -> int:
     papers, items = collect_sources(topic_key, topic)
     prompt = build_prompt(topic_key, topic, papers, items, today)
     digest = call_deepseek(prompt, topic["system_prompt"])
+    digest = append_source_links(digest, papers, items)
 
     title = f"{topic['title_prefix']} {today.isoformat()}"
     print(digest)
