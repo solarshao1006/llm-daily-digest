@@ -135,18 +135,22 @@ def build_prompt(papers: list[dict], news: list[dict], today: dt.date) -> str:
     news_limit = env_int("NEWS_LIMIT", 3)
     return textwrap.dedent(
         f"""
-        你是一个低 token 预算的 LLM 研究日报编辑。请基于下面的候选材料，输出中文日报。
+        你是一个低 token 预算但重视理解质量的 LLM 研究日报编辑。请基于下面的候选材料，输出中文日报。
 
         日期：{today.isoformat()}
 
         约束：
         - 最终论文最多 {paper_limit} 篇，资讯最多 {news_limit} 条。
-        - 全文 1200-1800 中文字以内。
-        - 每篇论文 120-180 中文字，每条资讯 80-120 中文字。
+        - 全文 1800-2600 中文字以内。
+        - 先从入选论文中选 1 篇“今日重点精读”，用 600-900 中文字展开讲清楚原理。
+        - 其他论文每篇 100-160 中文字，每条资讯 80-120 中文字。
         - 使用 paper-insight 的轻量标准：核心问题、一句话贡献、方法与证据、局限或注意点、阅读优先级。
+        - 重点精读必须包含：为什么选它、问题背景、核心机制/原理、方法流程、实验或证据、局限、对研究/工程的启发。
+        - 可以自然保留必要英文术语，不要为了中文化而硬翻；例如 LLM, agent, benchmark, inference, alignment, RAG, post-training, decode, KV cache, tool use, evaluation 等术语可以直接保留或中英混排。
+        - 原始英文论文标题必须保留，可在后面加简短中文解释；不要把英文标题完全翻译成中文标题。
         - 不做 citation chaining，不扩展相关工作，不编造 DOI/venue/数据集/结果/发布日期。
         - 如果候选质量一般，少写，不要凑数。
-        - 输出结构固定为：今日总览、重点论文、重点资讯、优先阅读建议、来源链接。
+        - 输出结构固定为：今日总览、今日重点精读、其他值得关注论文、重点资讯、优先阅读建议、来源链接。
 
         候选论文 JSON：
         {json.dumps(papers, ensure_ascii=False, separators=(",", ":"))}

@@ -28,6 +28,7 @@
 
 - arXiv 候选最多 12 篇
 - 最终论文最多 3 篇
+- 每天重点展开 1 篇论文，讲清核心原理和方法流程
 - 最终资讯最多 3 条
-- DeepSeek 输出上限 1800 tokens
+- DeepSeek 输出上限 2600 tokens
 - 不做 citation chaining、相关工作扩展或代码复现深挖
