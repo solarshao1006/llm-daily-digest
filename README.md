@@ -28,6 +28,7 @@
 - `DEEPSEEK_BASE_URL`：默认 `https://api.deepseek.com`
 - `PAPER_INSIGHT_SKILL_CHARS`：默认 `6000`
 - `SOURCE_LINK_LIMIT`：自动来源清单最多链接数，默认 `16`
+- `NCBI_REQUEST_DELAY_SECONDS`：PubMed/NCBI 请求间隔，workflow 默认 `1`
 - `AI_LLM_ENABLED`：设为 `false` 可关闭 AI/LLM 推送
 - `CHINA_CYBER_ENABLED`：设为 `false` 可关闭中国网络安全策略推送
 - `REPRO_AI_PGT_ENABLED`：设为 `false` 可关闭辅助生殖 AI/PGT 推送

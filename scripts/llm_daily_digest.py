@@ -255,8 +255,28 @@ def fetch_feeds(feed_urls: list[str], limit: int) -> list[dict]:
     return items[:limit]
 
 
+def ncbi_get(url: str, params: dict) -> requests.Response:
+    response = None
+    for attempt in range(4):
+        if attempt:
+            time.sleep(env_int("NCBI_REQUEST_DELAY_SECONDS", 1))
+        response = requests.get(url, params=params, timeout=30)
+        if response.status_code not in {429, 500, 502, 503, 504}:
+            return response
+        if attempt == 3:
+            return response
+        retry_after = response.headers.get("retry-after")
+        delay = int(retry_after) if retry_after and retry_after.isdigit() else 2**attempt * 5
+        print(
+            f"NCBI API returned {response.status_code}; retrying in {delay}s",
+            file=sys.stderr,
+        )
+        time.sleep(delay)
+    return response
+
+
 def fetch_pubmed(query: str, limit: int) -> list[dict]:
-    search_response = requests.get(
+    search_response = ncbi_get(
         PUBMED_ESEARCH_API,
         params={
             "db": "pubmed",
@@ -265,17 +285,16 @@ def fetch_pubmed(query: str, limit: int) -> list[dict]:
             "retmax": limit,
             "sort": "pub date",
         },
-        timeout=30,
     )
     search_response.raise_for_status()
     ids = search_response.json().get("esearchresult", {}).get("idlist", [])
     if not ids:
         return []
 
-    fetch_response = requests.get(
+    time.sleep(env_int("NCBI_REQUEST_DELAY_SECONDS", 1))
+    fetch_response = ncbi_get(
         PUBMED_EFETCH_API,
         params={"db": "pubmed", "id": ",".join(ids), "retmode": "xml"},
-        timeout=30,
     )
     fetch_response.raise_for_status()
     root = ET.fromstring(fetch_response.text)
@@ -340,7 +359,15 @@ def fetch_pubmed_with_journals(query: str, journals: list[str], limit: int) -> l
 
     journal_query = " OR ".join(f'"{journal}"[Journal]' for journal in journals)
     expanded_query = f"({query}) AND ({journal_query})"
-    journal_hits = fetch_pubmed(expanded_query, limit)
+    time.sleep(env_int("NCBI_REQUEST_DELAY_SECONDS", 1))
+    try:
+        journal_hits = fetch_pubmed(expanded_query, limit)
+    except requests.HTTPError as exc:
+        print(
+            f"PubMed journal-filter supplement failed; using primary results only: {exc}",
+            file=sys.stderr,
+        )
+        journal_hits = []
     return dedupe_items(journal_hits + primary)[:limit]
 
 
