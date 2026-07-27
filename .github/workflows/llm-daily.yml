@@ -2,8 +2,8 @@ name: Multi-Topic Daily Digests
 
 on:
   schedule:
-    # 00:00 UTC = 08:00 Asia/Shanghai
-    - cron: "0 0 * * *"
+    # 23:58 UTC = 07:58 Asia/Shanghai; avoid GitHub Actions top-of-hour schedule congestion.
+    - cron: "58 23 * * *"
   workflow_dispatch:
 
 jobs:
