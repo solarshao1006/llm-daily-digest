@@ -62,6 +62,7 @@ TOPICS = {
         - 使用 paper-insight 的轻量精读标准，并区分：论文声称、证据支持的结论、你的推断。
         - 重点精读包含：为什么选它、问题背景、核心机制/原理、方法流程、实验或证据、局限、对研究/工程的启发。
         - 如果某篇论文只有 abstract，没有 pdf_excerpt，必须标注 abstract-only。
+        - 如果候选论文为空或出现 arXiv source_error，不要编造论文；明确写“今日 arXiv 暂不可用”，只总结资讯。
         - 保留原始英文论文标题和必要英文术语，如 LLM, agent, benchmark, inference, alignment, RAG, decode, KV cache。
         - 不做 citation chaining，不扩展相关工作，不编造 DOI/venue/数据集/结果/发布日期。
         """,
@@ -184,6 +185,34 @@ def shanghai_today() -> dt.date:
     return dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).date()
 
 
+def get_with_retry(
+    url: str,
+    params: dict | None = None,
+    timeout: int = 30,
+    label: str = "HTTP",
+) -> requests.Response:
+    response = None
+    for attempt in range(4):
+        try:
+            response = requests.get(url, params=params, timeout=timeout)
+            if response.status_code not in {429, 500, 502, 503, 504}:
+                return response
+        except requests.RequestException as exc:
+            if attempt == 3:
+                raise
+            print(f"{label} request failed: {exc}; retrying", file=sys.stderr)
+
+        if attempt == 3:
+            return response
+        retry_after = response.headers.get("retry-after") if response is not None else None
+        delay = int(retry_after) if retry_after and retry_after.isdigit() else 2**attempt * 5
+        status = response.status_code if response is not None else "exception"
+        print(f"{label} returned {status}; retrying in {delay}s", file=sys.stderr)
+        time.sleep(delay)
+
+    return response
+
+
 def fetch_arxiv(keywords: list[str], max_candidates: int) -> list[dict]:
     query = " OR ".join(f"all:{kw}" for kw in keywords)
     params = {
@@ -193,7 +222,12 @@ def fetch_arxiv(keywords: list[str], max_candidates: int) -> list[dict]:
         "sortBy": "submittedDate",
         "sortOrder": "descending",
     }
-    response = requests.get(ARXIV_API, params=params, timeout=30)
+    response = get_with_retry(
+        ARXIV_API,
+        params=params,
+        timeout=env_int("ARXIV_TIMEOUT_SECONDS", 60),
+        label="arXiv API",
+    )
     response.raise_for_status()
 
     ns = {"atom": "http://www.w3.org/2005/Atom"}
@@ -426,8 +460,23 @@ def collect_sources(topic_key: str, topic: dict) -> tuple[list[dict], list[dict]
     mode = topic["source_mode"]
 
     if mode == "ai_llm":
-        papers = fetch_arxiv(topic["arxiv_keywords"], candidate_limit)
-        return enrich_papers_with_pdf_excerpt(papers), fetch_feeds(topic["feeds"], news_limit)
+        try:
+            papers = fetch_arxiv(topic["arxiv_keywords"], candidate_limit)
+            papers = enrich_papers_with_pdf_excerpt(papers)
+            source_errors = []
+        except requests.RequestException as exc:
+            print(f"arXiv unavailable; continuing with news feeds only: {exc}", file=sys.stderr)
+            papers = []
+            source_errors = [
+                {
+                    "type": "source_error",
+                    "source": "arXiv",
+                    "title": "arXiv API unavailable",
+                    "link": ARXIV_API,
+                    "summary": f"arXiv fetch failed; today's paper section should be marked unavailable: {exc}",
+                }
+            ]
+        return papers, source_errors + fetch_feeds(topic["feeds"], news_limit)
     if mode == "feeds_only":
         manual_sources = topic.get("manual_sources", [])
         return [], manual_sources + fetch_feeds(topic["feeds"], news_limit)
@@ -559,7 +608,12 @@ def call_deepseek(prompt: str, system_prompt: str) -> str:
 def push_serverchan(title: str, body: str) -> None:
     sendkey = os.getenv("SERVERCHAN_SENDKEY", "")
     if not sendkey.startswith("SCT"):
-        raise RuntimeError("Missing or invalid SERVERCHAN_SENDKEY")
+        topic = os.getenv("DIGEST_TOPIC", "unknown")
+        secret_name = os.getenv("SERVERCHAN_SECRET_NAME", "SERVERCHAN_SENDKEY")
+        raise RuntimeError(
+            f"Missing or invalid SERVERCHAN_SENDKEY for topic={topic}. "
+            f"Check GitHub Actions secret: {secret_name}"
+        )
     response = requests.post(
         SERVERCHAN_API.format(sendkey=sendkey),
         data={"title": title, "desp": body},

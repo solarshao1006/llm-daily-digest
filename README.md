@@ -17,6 +17,12 @@
 
 每个 `SERVERCHAN_SENDKEY` 通常以 `SCT` 开头。
 
+如果日志出现 `Missing or invalid SERVERCHAN_SENDKEY`，检查对应主题的 secret：
+
+- `ai_llm` -> `AI_LLM_SERVERCHAN_SENDKEY`
+- `china_cyber_strategy` -> `CHINA_CYBER_SERVERCHAN_SENDKEY`
+- `repro_ai_pgt` -> `REPRO_SERVERCHAN_SENDKEY`
+
 默认三个主题共用 `AI_LLM_DEEPSEEK_API_KEY`；如果没有配置它，则回退到旧变量 `DEEPSEEK_API_KEY`。如需单独计费或隔离限额，可额外配置：
 
 - `CHINA_CYBER_DEEPSEEK_API_KEY`
@@ -28,6 +34,7 @@
 - `DEEPSEEK_BASE_URL`：默认 `https://api.deepseek.com`
 - `PAPER_INSIGHT_SKILL_CHARS`：默认 `6000`
 - `SOURCE_LINK_LIMIT`：自动来源清单最多链接数，默认 `16`
+- `ARXIV_TIMEOUT_SECONDS`：arXiv API 读取超时时间，workflow 默认 `60`
 - `NCBI_REQUEST_DELAY_SECONDS`：PubMed/NCBI 请求间隔，workflow 默认 `1`
 - `AI_LLM_ENABLED`：设为 `false` 可关闭 AI/LLM 推送
 - `CHINA_CYBER_ENABLED`：设为 `false` 可关闭中国网络安全策略推送
