@@ -2,7 +2,7 @@ name: Multi-Topic Daily Digests
 
 on:
   schedule:
-    - cron: "28 7 * * *"
+    - cron: "28 6 * * *"
       timezone: "Asia/Shanghai"
   workflow_dispatch:
 
