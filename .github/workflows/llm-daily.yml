@@ -45,7 +45,7 @@ jobs:
           SERVERCHAN_SECRET_NAME: AI_LLM_SERVERCHAN_SENDKEY
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
           DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
-          MAX_COMPLETION_TOKENS: "2600"
+          MAX_COMPLETION_TOKENS: "3200"
           CANDIDATE_LIMIT: "12"
           ARXIV_TIMEOUT_SECONDS: "60"
           ARXIV_MAX_PDFS: "3"
@@ -66,7 +66,7 @@ jobs:
           SERVERCHAN_SECRET_NAME: CHINA_CYBER_SERVERCHAN_SENDKEY
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
           DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
-          MAX_COMPLETION_TOKENS: "2600"
+          MAX_COMPLETION_TOKENS: "3200"
           CANDIDATE_LIMIT: "12"
           NCBI_REQUEST_DELAY_SECONDS: "1"
           PAPER_INSIGHT_SKILL_PATH: "_external/Paper-insight-skill/paper-insight/SKILL.md"
@@ -84,7 +84,7 @@ jobs:
           SERVERCHAN_SECRET_NAME: REPRO_SERVERCHAN_SENDKEY
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
           DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
-          MAX_COMPLETION_TOKENS: "2600"
+          MAX_COMPLETION_TOKENS: "3200"
           CANDIDATE_LIMIT: "12"
           PAPER_INSIGHT_SKILL_PATH: "_external/Paper-insight-skill/paper-insight/SKILL.md"
           PAPER_INSIGHT_SKILL_CHARS: ${{ vars.PAPER_INSIGHT_SKILL_CHARS || '6000' }}

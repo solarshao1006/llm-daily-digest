@@ -576,6 +576,7 @@ def call_deepseek(prompt: str, system_prompt: str) -> str:
                     {"role": "user", "content": prompt},
                 ],
                 "max_tokens": max_tokens,
+                "thinking": {"type": "disabled"},
                 "temperature": 0.2,
             },
             timeout=120,
@@ -599,9 +600,17 @@ def call_deepseek(prompt: str, system_prompt: str) -> str:
         raise RuntimeError(f"DeepSeek API request failed: {exc}; body={error_body}") from exc
     payload = response.json()
     choices = payload.get("choices", [])
-    text = choices[0].get("message", {}).get("content", "").strip() if choices else ""
+    message = choices[0].get("message", {}) if choices else {}
+    text = message.get("content", "").strip()
     if not text:
-        raise RuntimeError(f"DeepSeek response had no text: {payload}")
+        finish_reason = choices[0].get("finish_reason", "unknown") if choices else "no_choices"
+        reasoning = message.get("reasoning_content", "")
+        raise RuntimeError(
+            "DeepSeek response had no final content; "
+            f"finish_reason={finish_reason}; "
+            f"reasoning_chars={len(reasoning)}; "
+            f"usage={payload.get('usage')}"
+        )
     return text
 
 

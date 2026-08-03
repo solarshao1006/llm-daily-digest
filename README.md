@@ -75,7 +75,7 @@ AI/LLM 和辅助生殖/PGT 主题会优先使用该 skill 的轻量论文精读�
 - 每个主题候选最多 12 条
 - AI/LLM 主题最多读取前 3 篇 arXiv PDF，每篇最多前 8 页、9000 字符
 - 每个主题最终重点展开 1 条内容
-- DeepSeek 输出上限 2600 tokens
+- DeepSeek thinking mode 已关闭，输出上限 3200 tokens
 - 不做 citation chaining、长综述或代码复现深挖
 
 ## 内容边界
